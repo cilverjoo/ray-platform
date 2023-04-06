@@ -1,0 +1,21 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1 
+kind: Elasticsearch 
+metadata: 
+  name: eck
+spec: 
+  version: 8.7.0 #Make sure you use the version of your choice 
+  http: 
+    service: 
+      spec: 
+        type: LoadBalancer #Adds a External IP 
+  nodeSets:
+  - name: default
+    count: 3
+    podTemplate:
+      spec:
+        initContainers:
+        - name: sysctl
+          securityContext:
+            privileged: true
+            runAsUser: 0
+          command: ['sh', '-c', 'sysctl -w vm.max_map_count=262144']

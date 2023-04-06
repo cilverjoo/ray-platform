@@ -1,0 +1,37 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus-external
+  namespace: ingress-basic
+spec:
+  type: ExternalName
+  externalName: prometheus-kube-prometheus-prometheus.monitoring.svc.cluster.local # ${SERVICE-NAME}.${NAMESPACE}.svc.cluster.local
+  ports:
+    - port: 80 # specify the port of service you want to expose 
+      targetPort: 9090 # port of external service 
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prometheus-ingress
+  namespace: ingress-basic
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt
+spec:
+  ingressClassName: "nginx"
+  tls:
+    - hosts:
+        - "NGINX_CONTROLLER_EXTERNAL_DNS"
+      secretName: letsencrypt-prod # 없으면 cluster-issuer가 생성해준다.
+  rules:
+  - host: "NGINX_CONTROLLER_EXTERNAL_DNS"
+    http:
+      paths:
+      - path: /prometheus
+        pathType: Prefix
+        backend:
+          service:
+            name: prometheus-external
+            port:
+              number: 80

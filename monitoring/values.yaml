@@ -1,0 +1,83 @@
+# charts values.yaml templete: https://github.com/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml
+grafana:
+  enabled: true
+
+  adminPassword: dpgrafana # ID: admin / PW : dpgrafana
+
+  persistence:
+    enabled: true
+    type: pvc
+    storageClassName: default # Persistence Volume을 생성할 때, default (disk.csi.azure.com에 의해 aks에 생성되어 있음)
+    accessModes: ["ReadWriteOnce"]
+    size: 4Gi
+    finalizers:
+    - kubernetes.io/pvc-protection
+
+  grafana.ini: 
+    server:
+      # root_url: "%(protocol)s://%(domain)s:%(http_port)s/$GRAFANA_PATH" # ingress로 접근할 새로운 root_url 주소 지정
+      root_url: "http://NGINX_CONTROLLER_EXTERNAL_DNS/grafana"
+      serve_from_sub_path: true
+
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: default
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 50Gi
+      selector: {}
+
+prometheus:
+  ## Settings affecting prometheusSpec
+  ## ref: https://github.com/prometheus-operator/prometheus-operator/blob/main/Documentation/api.md#prometheusspec
+  prometheusSpec:
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorSelectorNilUsesHelmValues: false
+
+    externalUrl: "http://NGINX_CONTROLLER_EXTERNAL_DNS:9090/prometheus"
+    routePrefix: "/"
+
+    ## AdditionalScrapeConfigs allows specifying additional Prometheus scrape configurations. official Prometheus documentation:
+    ## official Prometheus documentation: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
+    additionalScrapeConfigs:
+    - job_name: ray-cluster-1
+      kubernetes_sd_configs:
+      - role: service
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: "ray-cluster-1"
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: "raycluster-autoscaler-head-svc"
+        - source_labels: [__meta_kubernetes_service_port_name]
+          target_label: 9001
+    - job_name: ray-cluster-2
+      kubernetes_sd_configs:
+      - role: service
+      relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace]
+          target_label: "ray-cluster-2"
+        - source_labels: [__meta_kubernetes_service_name]
+          target_label: "raycluster-autoscaler-head-svc"
+        - source_labels: [__meta_kubernetes_service_port_name]
+          target_label: 9001
+
+alertmanagerSpec:
+  routePrefix: "/$ALERTMANAGER_PATH"
+
+kube-state-metrics:
+  prometheus:
+    monitor:
+      enabled: true
+      additionalLabels:
+        release: kube-prometheus-stack
+
+kubeEtcd:
+  enabled: false
+
+kubeControllerManager:
+  enabled: false
+
+kubeScheduler:
+  enabled: false
