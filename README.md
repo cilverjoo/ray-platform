@@ -108,11 +108,19 @@
 
 ## ray 클러스터 생성
 
+#### kuberay operator 설치
+
+	kubectl create -k "github.com/ray-project/kuberay/ray-operator/config/default?ref=v0.5.0&timeout=90s"
+
+
+#### ray cluster 설치
+
 	kubectl create namespace ray-cluster-1
 	kubectl create namespace ray-cluster-2
 
 	kubectl create -f ray/ray-cluster.autoscaler.yaml -n ray-cluster-1
 	kubectl create -f ray/ray-cluster.autoscaler.yaml -n ray-cluster-2
+
 
 * 별도의 head node를 갖는 서로 다른 레이 클러스터를 각 네임스페이스에 생성한다.
 * ray-cluster yaml 파일에 수정이 있을 경우, apply는 적용이 되지 않기 때문에 지우고 다시 생성해야 한다.
