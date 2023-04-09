@@ -62,7 +62,6 @@ airflow:
       - funcy==1.17
       - synology-api==0.4.4
       - python-i18n==0.3.9
-      - eimmo-sdk-inhouse==1.0.2
       - azure-servicebus==7.8.2
 
     extraVolumeMounts:
@@ -179,8 +178,8 @@ web:
           {'name':'google', 'icon':'fa-google',
               'token_key':'access_token',
               'remote_app': {
-                  'client_id':'382097348828-o81cso8m7o56335qs0vk5r8o1he8mdmf.apps.googleusercontent.com',
-                  'client_secret':'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',
+                  'client_id':'Google OAuth CLIENT_ID',
+                  'client_secret':'Google OAuth Secret',
                   'api_base_url':'https://www.googleapis.com/oauth2/v2/',
                   'client_kwargs':{
                     'scope': 'openid profile email profile'
