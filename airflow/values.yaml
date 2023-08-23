@@ -224,15 +224,3 @@ dags:
     branch: "main"
     revision: "HEAD"
     syncWait: 60
-
-# ingress:
-#   enabled: false
-
-  # apiVersion: networking.k8s.io/v1
-  # web:
-  #   path: "/airflow"
-  #   ingressClassName: "nginx"
-  #   precedingPaths:
-  #     - path: "/*"
-  #       serviceName: "ssl-redirect"
-  #       servicePort: "use-annotation"

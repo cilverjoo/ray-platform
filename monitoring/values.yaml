@@ -2,7 +2,7 @@
 grafana:
   enabled: true
 
-  adminPassword: dpgrafana # ID: admin / PW : dpgrafana
+  adminPassword: password
 
   persistence:
     enabled: true
@@ -42,22 +42,22 @@ prometheus:
     ## AdditionalScrapeConfigs allows specifying additional Prometheus scrape configurations. official Prometheus documentation:
     ## official Prometheus documentation: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
     additionalScrapeConfigs:
-    - job_name: ray-cluster-1
+    - job_name: ray_cluster-cluster-1
       kubernetes_sd_configs:
       - role: service
       relabel_configs:
         - source_labels: [__meta_kubernetes_namespace]
-          target_label: "ray-cluster-1"
+          target_label: "ray_cluster-cluster-1"
         - source_labels: [__meta_kubernetes_service_name]
           target_label: "raycluster-autoscaler-head-svc"
         - source_labels: [__meta_kubernetes_service_port_name]
           target_label: 9001
-    - job_name: ray-cluster-2
+    - job_name: ray_cluster-cluster-2
       kubernetes_sd_configs:
       - role: service
       relabel_configs:
         - source_labels: [__meta_kubernetes_namespace]
-          target_label: "ray-cluster-2"
+          target_label: "ray_cluster-cluster-2"
         - source_labels: [__meta_kubernetes_service_name]
           target_label: "raycluster-autoscaler-head-svc"
         - source_labels: [__meta_kubernetes_service_port_name]
