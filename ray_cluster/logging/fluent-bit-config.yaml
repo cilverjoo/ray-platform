@@ -1,0 +1,58 @@
+# Fluent Bit ConfigMap
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluentbit-config
+data:
+  fluent-bit.conf: |
+    [INPUT]
+        Name tail
+        Path /tmp/ray/session_*/logs/*
+        Tag *
+        Refresh_Interval 2
+    [FILTER]
+        Name record_modifier
+        Match *
+        Record hostname ${HOSTNAME}
+        Record namespace ${KUBERNETES_NAMESPACE}
+    [FILTER]
+        Name rewrite_tag
+        Match_Regex ^tmp.ray.session_([^.]*).logs.job-driver-(.*)$
+        Rule $log ^(.*)$ $TAG[4] false
+    [FILTER]
+        Name stdout
+        Match job-driver-*
+    [FILTER]
+        Name rewrite_tag
+        Match tmp.ray.session_*
+        Rule $log ^(.*)$ $TAG[2]/$TAG[4].$TAG[5] false
+    [OUTPUT]
+        Name es
+        Match job-driver-*
+        Host opensearch-cluster-master.log-platform.svc
+        Port 9200
+        Logstash_Format On
+        Logstash_Prefix ray_index-job_driver
+        HTTP_User      logcollector
+        HTTP_Passwd    dplogcollector2023
+        tls            on
+        tls.verify     off
+        tls.debug      1
+        Suppress_Type_Name On
+        Include_Tag_Key On
+        Tag_Key         log_file
+    [OUTPUT]
+        Name es
+        Match session_*
+        Host opensearch-cluster-master.log-platform.svc
+        Port 9200
+        Logstash_Format On
+        Logstash_Prefix ray_index-monitor_agent
+        HTTP_User      logcollector
+        HTTP_Passwd    dplogcollector2023
+        tls            on
+        tls.verify     off
+        tls.debug      1
+        Suppress_Type_Name On
+        Include_Tag_Key On
+        Tag_Key         log_file

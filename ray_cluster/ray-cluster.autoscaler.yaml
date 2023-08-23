@@ -1,0 +1,186 @@
+# This config demonstrates KubeRay's Ray autoscaler integration.
+apiVersion: ray_cluster.io/v1alpha1
+kind: RayCluster
+metadata:
+  labels:
+    controller-tools.k8s.io: "1.0"
+  name: raycluster-autoscaler
+  # annotations:
+    # ray_cluster.io/ft-enabled: "true" # <- add this annotation enable GCS FT
+    # ray_cluster.io/external-storage-namespace: "external-storage-namespace-name"
+spec:
+  rayVersion: '2.5.1'
+  enableInTreeAutoscaling: true
+  headGroupSpec:
+    replicas: 0
+    # Kubernetes Service Type, valid values are 'ClusterIP', 'NodePort' and 'LoadBalancer'
+    serviceType: 'LoadBalancer'
+    enableIngress: true
+    # the following params are used to complete the ray_cluster start: ray_cluster start --head --block ...
+    rayStartParams:
+      dashboard-host: '0.0.0.0'
+      block: "true"
+      metrics-export-port: "9001"
+    template:
+      metadata:
+        labels:
+          rayCluster: raycluster-autoscaler # will be injected if missing
+          rayNodeType: head # will be injected if missing, must be head or worker
+          groupName: headgroup # will be injected if missing
+      spec:
+        nodeSelector:
+          agentpool: raypool
+        containers:
+        # The Ray head container
+        - name: ray_cluster-head
+          image: aimmo.azurecr.io/gtaas-processing:dev_20230720_1
+          imagePullPolicy: Always
+          ports:
+          - containerPort: 10001
+            name: client
+            protocol: TCP
+          - containerPort: 8265
+            name: dashboard
+            protocol: TCP
+          - containerPort: 8000
+            name: serve
+            protocol: TCP
+          - containerPort: 6379
+            name: gcs
+            protocol: TCP
+          - containerPort: 9001
+            name: metrics
+            protocol: TCP
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh","-c", "-l","ray_cluster stop"]
+          resources:
+            limits:
+              cpu: 2
+              memory: 10Gi
+            requests:
+              cpu: 2
+              memory: 10Gi
+          volumeMounts:
+            - mountPath: /tmp/ray_cluster
+              name: ray_cluster-logs
+            - mountPath: /mnt/files
+              name: az-files
+        # Fluent Bit sidecar
+        - name: fluentbit
+          image: fluent/fluent-bit:1.9.6
+          env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+          - mountPath: /tmp/ray_cluster
+            name: ray_cluster-logs
+          - mountPath: /fluent-bit/etc/fluent-bit.conf
+            subPath: fluent-bit.conf
+            name: fluentbit-config
+        # Log and config volumes
+        volumes:
+        - name: ray_cluster-logs
+          emptyDir: {}
+        - name: az-files
+          persistentVolumeClaim:
+            claimName: ray_cluster-azurefile-pvc
+        - name: fluentbit-config
+          configMap:
+            name: fluentbit-config
+  workerGroupSpecs:
+  # the pod replicas in this group typed worker
+  - replicas: 1
+    minReplicas: 0
+    maxReplicas: 10
+    # logical group name, for this called small-group, also can be functional
+    groupName: worker-group
+    # the following params are used to complete the ray_cluster start: ray_cluster start --block ...
+    rayStartParams:
+      metrics-export-port: "9001"
+      block: "true"
+    # pod template
+    template:
+      spec:
+        nodeSelector:
+          agentpool: raypool
+        initContainers:
+        # the env var $RAY_IP is set by the operator if missing, with the value of the head service name
+        - name: init
+          image: busybox:1.28
+          command: ['sh', '-c', "until nslookup $RAY_IP.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for K8s Service $RAY_IP; sleep 2; done"]
+        containers:
+        - name: ray_cluster-worker
+          image: aimmo.azurecr.io/gtaas-processing:dev_20230720_1
+          env:
+          - name: TYPE
+            value: "worker"
+          - name: MY_POD_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.name
+          - name: MY_POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          ports:
+          - containerPort: 80
+            name: http
+            protocol: TCP
+          lifecycle:
+            preStop:
+              exec:
+                command: ["/bin/sh","-c","-l","ray_cluster stop"]
+          resources:
+            limits:
+              cpu: 2
+              memory: 10Gi
+            requests:
+              cpu: 2
+              memory: 10Gi
+          volumeMounts:
+          - mountPath: /tmp/ray_cluster
+            name: ray_cluster-logs
+          - mountPath: /mnt/files
+            name: az-files
+        # Fluent Bit sidecar
+        - name: fluentbit
+          image: fluent/fluent-bit:1.9.6
+          env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+          - mountPath: /tmp/ray_cluster
+            name: ray_cluster-logs
+          - mountPath: /fluent-bit/etc/fluent-bit.conf
+            subPath: fluent-bit.conf
+            name: fluentbit-config
+        # Log and config volumes
+        volumes:
+        - name: ray_cluster-logs
+          emptyDir: {}
+        - name: az-files
+          persistentVolumeClaim:
+            claimName: ray_cluster-azurefile-pvc
+        - name: fluentbit-config
+          configMap:
+            name: fluentbit-config
