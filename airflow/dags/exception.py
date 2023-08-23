@@ -1,0 +1,3 @@
+class RayJobFailedException(Exception):
+    pass
+
