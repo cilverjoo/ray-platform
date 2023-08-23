@@ -124,3 +124,17 @@
 
 * 별도의 head node를 갖는 서로 다른 레이 클러스터를 각 네임스페이스에 생성한다.
 * ray-cluster yaml 파일에 수정이 있을 경우, apply는 적용이 되지 않기 때문에 지우고 다시 생성해야 한다.
+
+
+### airflow에서 dags로 ray job 실행시키기
+* 이미지에서 실행할 코드를 cli로 실행시킬 수 있게 환경을 만들어둔 후, 이미지의 depencency를 갖춘 ray 전용 이미지에 작업을 제출한다.
+* ray job submit --address="http://<RAY_CLUSTER_EXTERNAL_ADDRESS>:8265" --working-dir="<코드스페이스의 root 경로>" -- CLI
+* ray job을 제출하는 기본 dags를 만들어 두고, 코드에 따라 별도의 cli를 날리도록 새로운 인자를 받을 수 있게 설정한다.
+* ray-cluster를 복수 개 띄워두고 작업이 진행중이지 않은 cluster만 선택하려는 경우, ray에서 제공하는 JobSubmissionClient를 사용하여 실행중인 job 리스트를 조회할 수 있다.
+
+
+### ray-cluster의 배포
+* 현재까지는 ray-cluster의 설정에 변경사항이 있는 경우, ray-cluster를 삭제하고 다시 생성해야 한다.
+* ArgoCD를 활용해서 모든 resource를 제거하고 다시 배포하도록 설정할 수 있으나, 이런 경우 ray-cluster가 잠시 중단되는 문제가 발생한다.
+* 대안은 dependency만 설치된 이미지를 생성한 다음, git-sync를 활용해서 코드의 수정/추가만 있는 경우를 커버하는 것이다.
+* 더 좋은 방법은 아직 못찾음.
