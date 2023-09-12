@@ -71,10 +71,11 @@ class RayWorker:
     def run(self):
         exception_logs = []
         num_worker_executed_tasks = 0
-        self.path_item_ref = self.path_queue.get_path_item.remote(self.ext)
 
         while True:
+            self.path_item_ref = self.path_queue.get_path_item.remote(self.ext)
             path_item = ray.get(self.path_item_ref)
+
             if path_item.is_empty():
                 break
 
