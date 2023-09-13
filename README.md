@@ -1,11 +1,11 @@
 ## ray 클러스터 생성
 
-#### kuberay operator 설치
+### kuberay operator 설치
 
 	kubectl create -k "github.com/ray-project/kuberay/ray-operator/config/default?ref=v0.5.0&timeout=90s"
 
 
-#### ray cluster 설치
+### ray cluster 설치
 
 	kubectl create namespace ray-cluster-1
 	kubectl create namespace ray-cluster-2
@@ -34,7 +34,7 @@
 
 ## airflow 셋팅
 
-#### airflow와 연동할 azure storage의 연결문자열을 airflow를 설치할 네임스페이스에 secret으로 생성
+### airflow와 연동할 azure storage의 연결문자열을 airflow를 설치할 네임스페이스에 secret으로 생성
 	kubectl create namespace airflow
 
 	kubectl create secret generic airflow-pod-disk-secret \
@@ -43,7 +43,7 @@
 	--from-literal=azurestorageaccountname=aimmodp
 
 
-#### helm으로 airflow 설치
+### helm으로 airflow 설치
 
 	export CHART_VERSION=8.6.1
 
@@ -57,7 +57,7 @@
 	  --values airflow/values.yaml
 
 
-#### helm으로 설치한 airflow의 config 수정 시, upgrade 적용
+### helm으로 설치한 airflow의 config 수정 시, upgrade 적용
 
 	helm upgrade airflow airflow-stable/airflow \
 	--namespace airflow \
@@ -98,7 +98,7 @@
 	--set controller.service.externalTrafficPolicy=Local
 
 
-#### 고정 ip를 nginx-ingress의 주소로 할당
+### 고정 ip를 nginx-ingress의 주소로 할당
 
 	az aks show \
 	--resource-group myResourceGroup \
